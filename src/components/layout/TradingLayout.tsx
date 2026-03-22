@@ -22,7 +22,7 @@ export function TradingLayout() {
   }, [selectedInstrument, setSelectedInstrument]);
 
   return (
-    <div className="h-screen w-screen overflow-hidden grid grid-rows-[64px_1fr_240px] grid-cols-[280px_1fr_320px] bg-bg-primary">
+    <div className="h-screen w-screen overflow-hidden grid grid-rows-[140px_1fr_240px] grid-cols-[280px_1fr_320px] bg-bg-primary">
       <TopNavbar />
       <AssetSidebar />
       <ChartPanel />
