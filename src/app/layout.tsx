@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "WebTrader — Trading Platform",
+  title: "FNX Trading — Trading Platform",
   description: "Professional CFD & Forex Trading Platform",
 };
 

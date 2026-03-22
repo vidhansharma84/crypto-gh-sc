@@ -1,6 +1,7 @@
 "use client";
 
-import { Bell, Settings, User, TrendingUp } from "lucide-react";
+import Image from "next/image";
+import { Bell, Settings, User } from "lucide-react";
 import { useTradingStore } from "@/store/trading-store";
 import { formatCurrency, formatPL } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
@@ -25,9 +26,9 @@ export function TopNavbar() {
     <div className="col-span-3 flex items-center justify-between px-4 bg-bg-secondary border-b border-border-primary h-12">
       {/* Logo */}
       <div className="flex items-center gap-2 min-w-[160px]">
-        <TrendingUp className="w-5 h-5 text-trading-blue" />
+        <Image src="/logo.png" alt="FNX Trading" width={32} height={32} />
         <span className="font-bold text-text-primary text-sm tracking-wide">
-          WebTrader
+          FNX Trading
         </span>
       </div>
 
