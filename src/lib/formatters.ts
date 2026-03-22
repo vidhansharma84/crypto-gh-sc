@@ -25,22 +25,20 @@ export function formatVolume(value: number): string {
   return value.toFixed(2);
 }
 
+const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
 export function formatDateTime(iso: string): string {
   const d = new Date(iso);
-  return d.toLocaleString("en-US", {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
+  const month = MONTHS[d.getMonth()];
+  const day = d.getDate();
+  const hours = String(d.getHours()).padStart(2, "0");
+  const mins = String(d.getMinutes()).padStart(2, "0");
+  return `${month} ${day}, ${hours}:${mins}`;
 }
 
 export function formatTime(iso: string): string {
   const d = new Date(iso);
-  return d.toLocaleString("en-US", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
+  const hours = String(d.getHours()).padStart(2, "0");
+  const mins = String(d.getMinutes()).padStart(2, "0");
+  return `${hours}:${mins}`;
 }
