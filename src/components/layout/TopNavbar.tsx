@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { Bell, Settings, User } from "lucide-react";
 import { useTradingStore } from "@/store/trading-store";
 import { formatCurrency, formatPL } from "@/lib/formatters";
@@ -26,7 +25,7 @@ export function TopNavbar() {
     <div className="col-span-3 flex items-center justify-between px-4 bg-bg-secondary border-b border-border-primary h-12">
       {/* Logo */}
       <div className="flex items-center gap-2 min-w-[160px]">
-        <Image src="/logo.png" alt="FNX Trading" width={32} height={32} />
+        <img src="/logo.png" alt="FNX Trading" width={32} height={32} />
         <span className="font-bold text-text-primary text-sm tracking-wide">
           FNX Trading
         </span>
