@@ -22,7 +22,7 @@ export function TopNavbar() {
   ];
 
   return (
-    <div className="col-span-3 flex items-center justify-between px-4 bg-bg-secondary border-b border-border-primary h-[140px]">
+    <div className="col-span-3 flex items-center justify-between px-4 bg-bg-secondary border-b border-border-primary h-[100px]">
       {/* Logo */}
       <div className="flex items-center min-w-[160px]">
         <img src="/logo.png" alt="FNX Trading" width={120} height={120} />
