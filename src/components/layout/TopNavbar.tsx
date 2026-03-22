@@ -25,7 +25,7 @@ export function TopNavbar() {
     <div className="col-span-3 flex items-center justify-between px-4 bg-bg-secondary border-b border-border-primary h-16">
       {/* Logo */}
       <div className="flex items-center min-w-[160px]">
-        <img src="/logo.png" alt="FNX Trading" className="h-full w-auto py-1" />
+        <img src="/logo.png" alt="FNX Trading" width={40} height={40} />
       </div>
 
       {/* Account Stats */}
