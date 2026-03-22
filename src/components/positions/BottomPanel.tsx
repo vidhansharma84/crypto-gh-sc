@@ -19,9 +19,9 @@ export function BottomPanel() {
     useTradingStore();
 
   return (
-    <div className="col-span-2 bg-bg-secondary border-t border-border-primary flex flex-col overflow-hidden">
+    <div className="w-full h-full bg-bg-secondary border-t border-border-primary flex flex-col overflow-hidden">
       {/* Tabs */}
-      <div className="flex items-center border-b border-border-primary px-2 h-8 flex-shrink-0">
+      <div className="flex items-center border-b border-border-primary px-1 sm:px-2 h-8 flex-shrink-0 overflow-x-auto">
         {TABS.map((tab) => {
           const count =
             tab.id === "positions"
@@ -34,7 +34,7 @@ export function BottomPanel() {
               key={tab.id}
               onClick={() => setActiveBottomTab(tab.id)}
               className={cn(
-                "px-3 h-full text-[11px] transition-colors border-b-2 whitespace-nowrap",
+                "px-2 sm:px-3 h-full text-[10px] sm:text-[11px] transition-colors border-b-2 whitespace-nowrap flex-shrink-0",
                 activeBottomTab === tab.id
                   ? "text-trading-blue border-trading-blue"
                   : "text-text-tertiary border-transparent hover:text-text-secondary"

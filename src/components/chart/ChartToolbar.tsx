@@ -29,20 +29,20 @@ export function ChartToolbar() {
         : 0;
 
   return (
-    <div className="flex items-center justify-between px-3 h-10 border-b border-border-primary bg-bg-secondary">
+    <div className="flex items-center justify-between px-2 sm:px-3 h-10 border-b border-border-primary bg-bg-secondary overflow-x-auto gap-2 flex-shrink-0">
       {/* Instrument Info */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
         {selectedInstrument && (
           <>
-            <span className="font-semibold text-sm text-text-primary">
+            <span className="font-semibold text-xs sm:text-sm text-text-primary whitespace-nowrap">
               {selectedInstrument.symbol}
             </span>
-            <span className="font-mono text-xs text-text-secondary">
+            <span className="font-mono text-[10px] sm:text-xs text-text-secondary whitespace-nowrap">
               {selectedInstrument.bid.toFixed(decimals)}
             </span>
             <span
               className={cn(
-                "text-xs font-mono",
+                "text-[10px] sm:text-xs font-mono whitespace-nowrap",
                 selectedInstrument.changePercent >= 0
                   ? "text-trading-green"
                   : "text-trading-red"
@@ -56,13 +56,13 @@ export function ChartToolbar() {
       </div>
 
       {/* Timeframe Selector */}
-      <div className="flex items-center gap-0.5">
+      <div className="flex items-center gap-0.5 flex-shrink-0">
         {TIMEFRAMES.map((tf) => (
           <button
             key={tf.value}
             onClick={() => setTimeframe(tf.value)}
             className={cn(
-              "px-2 py-1 text-[11px] rounded transition-colors",
+              "px-1.5 sm:px-2 py-1 text-[10px] sm:text-[11px] rounded transition-colors whitespace-nowrap",
               timeframe === tf.value
                 ? "bg-trading-blue text-white"
                 : "text-text-secondary hover:text-text-primary hover:bg-bg-hover"
@@ -74,7 +74,7 @@ export function ChartToolbar() {
       </div>
 
       {/* Chart Type Toggle */}
-      <div className="flex items-center gap-0.5">
+      <div className="flex items-center gap-0.5 flex-shrink-0">
         {CHART_TYPES.map((ct) => {
           const Icon = chartTypeIcons[ct.value];
           return (

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { X } from "lucide-react";
 import { AssetSearch } from "./AssetSearch";
 import { AssetCategoryItem } from "./AssetCategoryItem";
 import { ASSET_CATEGORIES } from "@/lib/constants";
@@ -23,7 +24,7 @@ const instrumentsByCategory: Record<AssetCategory, Instrument[]> = {
 };
 
 export function AssetSidebar() {
-  const { searchQuery } = useTradingStore();
+  const { searchQuery, toggleSidebar } = useTradingStore();
 
   const filteredByCategory = useMemo(() => {
     if (!searchQuery.trim()) return instrumentsByCategory;
@@ -46,7 +47,14 @@ export function AssetSidebar() {
   }, [searchQuery]);
 
   return (
-    <div className="row-span-2 bg-bg-secondary border-r border-border-primary flex flex-col overflow-hidden">
+    <div className="w-full h-full bg-bg-secondary border-r border-border-primary flex flex-col overflow-hidden">
+      {/* Mobile close button */}
+      <div className="flex items-center justify-between px-3 py-2 lg:hidden border-b border-border-primary">
+        <span className="text-xs font-semibold text-text-primary uppercase tracking-wider">Instruments</span>
+        <button onClick={toggleSidebar} className="p-1 rounded hover:bg-bg-hover transition-colors">
+          <X className="w-4 h-4 text-text-secondary" />
+        </button>
+      </div>
       <AssetSearch />
       <div className="flex-1 overflow-y-auto">
         {ASSET_CATEGORIES.map((cat) => {

@@ -33,7 +33,7 @@ export function OrderForm() {
     orderForm.leverage;
 
   return (
-    <div className="flex flex-col p-3 gap-3">
+    <div className="flex flex-col p-3 gap-4 sm:gap-3">
       {/* Instrument Header */}
       <div className="text-center pb-2 border-b border-border-primary">
         <div className="font-semibold text-sm text-text-primary">

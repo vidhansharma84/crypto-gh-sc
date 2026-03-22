@@ -27,7 +27,8 @@ export function TradeHistory() {
   }
 
   return (
-    <table className="w-full text-[11px]">
+    <div className="overflow-x-auto">
+    <table className="w-full text-[11px] min-w-[600px]">
       <thead>
         <tr className="border-b border-border-secondary">
           {COLUMNS.map((col) => (
@@ -85,5 +86,6 @@ export function TradeHistory() {
         ))}
       </tbody>
     </table>
+    </div>
   );
 }

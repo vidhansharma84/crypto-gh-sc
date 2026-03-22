@@ -42,9 +42,11 @@ interface TradingStore {
   activeBottomTab: "positions" | "pending" | "history" | "calendar";
   setActiveBottomTab: (tab: "positions" | "pending" | "history" | "calendar") => void;
 
-  // Sidebar visibility (for mobile)
+  // Mobile visibility
   sidebarOpen: boolean;
   toggleSidebar: () => void;
+  orderPanelOpen: boolean;
+  toggleOrderPanel: () => void;
 }
 
 const defaultOrderForm: OrderFormState = {
@@ -101,7 +103,9 @@ export const useTradingStore = create<TradingStore>((set) => ({
   activeBottomTab: "positions",
   setActiveBottomTab: (tab) => set({ activeBottomTab: tab }),
 
-  // Sidebar
-  sidebarOpen: true,
+  // Mobile visibility
+  sidebarOpen: false,
   toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
+  orderPanelOpen: false,
+  toggleOrderPanel: () => set((state) => ({ orderPanelOpen: !state.orderPanelOpen })),
 }));

@@ -18,7 +18,7 @@ export function InstrumentRow({ instrument }: InstrumentRowProps) {
     <div
       onClick={() => setSelectedInstrument(instrument)}
       className={cn(
-        "flex items-center justify-between px-3 py-1.5 cursor-pointer transition-colors text-[11px]",
+        "flex items-center justify-between px-3 py-2 sm:py-1.5 cursor-pointer transition-colors text-[11px]",
         "hover:bg-bg-hover",
         isSelected && "bg-bg-active border-l-2 border-trading-blue"
       )}
@@ -29,7 +29,7 @@ export function InstrumentRow({ instrument }: InstrumentRowProps) {
       <span className="font-mono text-text-secondary w-[60px] text-right">
         {instrument.bid.toFixed(decimals)}
       </span>
-      <span className="font-mono text-text-secondary w-[60px] text-right">
+      <span className="font-mono text-text-secondary w-[60px] text-right hidden sm:inline">
         {instrument.ask.toFixed(decimals)}
       </span>
       <span

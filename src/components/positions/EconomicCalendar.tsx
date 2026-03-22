@@ -22,7 +22,8 @@ const impactColors = {
 
 export function EconomicCalendar() {
   return (
-    <table className="w-full text-[11px]">
+    <div className="overflow-x-auto">
+    <table className="w-full text-[11px] min-w-[550px]">
       <thead>
         <tr className="border-b border-border-secondary">
           {COLUMNS.map((col) => (
@@ -73,5 +74,6 @@ export function EconomicCalendar() {
         ))}
       </tbody>
     </table>
+    </div>
   );
 }

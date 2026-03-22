@@ -31,7 +31,8 @@ export function OpenPositions() {
   }
 
   return (
-    <table className="w-full text-[11px]">
+    <div className="overflow-x-auto">
+    <table className="w-full text-[11px] min-w-[700px]">
       <thead>
         <tr className="border-b border-border-secondary">
           {COLUMNS.map((col) => (
@@ -100,5 +101,6 @@ export function OpenPositions() {
         ))}
       </tbody>
     </table>
+    </div>
   );
 }
