@@ -8,11 +8,21 @@ import { mockPendingOrders } from "@/data/mock-orders";
 import { mockTradeHistory } from "@/data/mock-history";
 import { mockAccount } from "@/data/account";
 
+interface AuthUser {
+  id: string;
+  name: string;
+  email: string;
+  role: "user" | "admin";
+  balance: number;
+}
+
 interface TradingStore {
   // Auth
   isAuthenticated: boolean;
-  login: (email: string, password: string) => boolean;
-  logout: () => void;
+  user: AuthUser | null;
+  setUser: (user: AuthUser | null) => void;
+  logout: () => Promise<void>;
+  fetchUser: () => Promise<void>;
 
   // Selected instrument
   selectedInstrument: Instrument | null;
@@ -66,20 +76,28 @@ const defaultOrderForm: OrderFormState = {
   takeProfitEnabled: false,
 };
 
-const ADMIN_EMAIL = "admin@fnxtrading.com";
-const ADMIN_PASSWORD = "admin123";
-
 export const useTradingStore = create<TradingStore>((set) => ({
   // Auth
   isAuthenticated: false,
-  login: (email, password) => {
-    if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
-      set({ isAuthenticated: true });
-      return true;
-    }
-    return false;
+  user: null,
+  setUser: (user) => set({ user, isAuthenticated: !!user }),
+  logout: async () => {
+    await fetch("/api/auth/logout", { method: "POST" });
+    set({ user: null, isAuthenticated: false });
   },
-  logout: () => set({ isAuthenticated: false }),
+  fetchUser: async () => {
+    try {
+      const res = await fetch("/api/auth/me");
+      if (res.ok) {
+        const data = await res.json();
+        set({ user: data.user, isAuthenticated: true });
+      } else {
+        set({ user: null, isAuthenticated: false });
+      }
+    } catch {
+      set({ user: null, isAuthenticated: false });
+    }
+  },
 
   // Selected instrument
   selectedInstrument: null,
