@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { Bell, Settings, User, Menu, ShoppingCart, LogOut } from "lucide-react";
+import { Bell, Settings, User, Menu, ShoppingCart, LogOut, LogIn } from "lucide-react";
 import { useTradingStore } from "@/store/trading-store";
 import { formatCurrency, formatPL } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
@@ -106,19 +106,27 @@ export function TopNavbar() {
         <button className="p-1.5 rounded hover:bg-bg-hover transition-colors hidden sm:block">
           <Settings className="w-4 h-4 text-text-secondary" />
         </button>
-        {user && (
-          <div className="hidden sm:flex items-center gap-2 px-2 py-1 rounded bg-bg-tertiary">
-            <User className="w-3.5 h-3.5 text-trading-blue" />
-            <span className="text-xs text-text-primary">{user.name}</span>
-          </div>
-        )}
-        {isAuthenticated && (
+        {isAuthenticated ? (
+          <>
+            <div className="hidden sm:flex items-center gap-2 px-2 py-1 rounded bg-bg-tertiary">
+              <User className="w-3.5 h-3.5 text-trading-blue" />
+              <span className="text-xs text-text-primary">{user?.name}</span>
+            </div>
+            <button
+              onClick={handleLogout}
+              className="p-1.5 rounded hover:bg-trading-red/20 transition-colors"
+              title="Logout"
+            >
+              <LogOut className="w-4 h-4 text-text-secondary hover:text-trading-red" />
+            </button>
+          </>
+        ) : (
           <button
-            onClick={handleLogout}
-            className="p-1.5 rounded hover:bg-trading-red/20 transition-colors"
-            title="Logout"
+            onClick={() => router.push("/login")}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-trading-blue text-white text-xs font-medium hover:bg-trading-blue/90 transition-colors"
           >
-            <LogOut className="w-4 h-4 text-text-secondary hover:text-trading-red" />
+            <LogIn className="w-3.5 h-3.5" />
+            <span>Sign In</span>
           </button>
         )}
       </div>
