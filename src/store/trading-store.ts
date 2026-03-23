@@ -9,6 +9,11 @@ import { mockTradeHistory } from "@/data/mock-history";
 import { mockAccount } from "@/data/account";
 
 interface TradingStore {
+  // Auth
+  isAuthenticated: boolean;
+  login: (email: string, password: string) => boolean;
+  logout: () => void;
+
   // Selected instrument
   selectedInstrument: Instrument | null;
   setSelectedInstrument: (instrument: Instrument) => void;
@@ -61,7 +66,21 @@ const defaultOrderForm: OrderFormState = {
   takeProfitEnabled: false,
 };
 
+const ADMIN_EMAIL = "admin@fnxtrading.com";
+const ADMIN_PASSWORD = "admin123";
+
 export const useTradingStore = create<TradingStore>((set) => ({
+  // Auth
+  isAuthenticated: false,
+  login: (email, password) => {
+    if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+      set({ isAuthenticated: true });
+      return true;
+    }
+    return false;
+  },
+  logout: () => set({ isAuthenticated: false }),
+
   // Selected instrument
   selectedInstrument: null,
   setSelectedInstrument: (instrument) => set({ selectedInstrument: instrument }),
