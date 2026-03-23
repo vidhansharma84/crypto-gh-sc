@@ -9,7 +9,7 @@ export function ChartPanel() {
   const { selectedInstrument } = useTradingStore();
 
   return (
-    <div className="flex flex-col bg-bg-primary overflow-hidden">
+    <div className="flex flex-col h-full bg-bg-primary overflow-hidden">
       <ChartToolbar />
       <div className="flex-1 relative">
         {selectedInstrument ? (

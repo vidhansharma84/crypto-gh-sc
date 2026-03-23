@@ -4,6 +4,8 @@ import { useEffect } from "react";
 import { TopNavbar } from "./TopNavbar";
 import { AssetSidebar } from "../sidebar/AssetSidebar";
 import { ChartPanel } from "../chart/ChartPanel";
+import { MarketTicker } from "../chart/MarketTicker";
+import { QuickTradeBar } from "../chart/QuickTradeBar";
 import { OrderPanel } from "../order/OrderPanel";
 import { BottomPanel } from "../positions/BottomPanel";
 import { useTradingStore } from "@/store/trading-store";
@@ -24,6 +26,7 @@ export function TradingLayout() {
   return (
     <div className="h-screen w-screen overflow-hidden flex flex-col bg-bg-primary">
       <TopNavbar />
+      <MarketTicker />
 
       {/* Main content area */}
       <div className="flex-1 flex overflow-hidden relative">
@@ -47,6 +50,7 @@ export function TradingLayout() {
           <div className="flex-1 overflow-hidden">
             <ChartPanel />
           </div>
+          <QuickTradeBar />
           <div className="h-[200px] lg:h-[240px] flex-shrink-0">
             <BottomPanel />
           </div>
