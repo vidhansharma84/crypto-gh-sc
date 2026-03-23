@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useTradingStore } from "@/store/trading-store";
 
 export function LoginPage() {
   const { login } = useTradingStore();
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -19,7 +21,9 @@ export function LoginPage() {
     }
 
     const success = login(email, password);
-    if (!success) {
+    if (success) {
+      router.push("/");
+    } else {
       setError("Invalid email or password");
     }
   };
@@ -38,7 +42,7 @@ export function LoginPage() {
             Admin Login
           </h1>
           <p className="text-xs text-text-tertiary text-center mb-6">
-            Sign in to access the trading platform
+            Sign in to access the admin panel
           </p>
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">

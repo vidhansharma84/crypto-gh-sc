@@ -6,7 +6,7 @@ import { formatCurrency, formatPL } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 
 export function TopNavbar() {
-  const { account, toggleSidebar, toggleOrderPanel, logout } = useTradingStore();
+  const { account, toggleSidebar, toggleOrderPanel, logout, isAuthenticated } = useTradingStore();
 
   const stats = [
     { label: "Balance", value: formatCurrency(account.balance), mobile: true },
@@ -94,13 +94,15 @@ export function TopNavbar() {
         <div className="w-7 h-7 rounded-full bg-trading-blue/20 flex items-center justify-center hidden sm:flex">
           <User className="w-3.5 h-3.5 text-trading-blue" />
         </div>
-        <button
-          onClick={logout}
-          className="p-1.5 rounded hover:bg-trading-red/20 transition-colors"
-          title="Logout"
-        >
-          <LogOut className="w-4 h-4 text-text-secondary hover:text-trading-red" />
-        </button>
+        {isAuthenticated && (
+          <button
+            onClick={logout}
+            className="p-1.5 rounded hover:bg-trading-red/20 transition-colors"
+            title="Logout"
+          >
+            <LogOut className="w-4 h-4 text-text-secondary hover:text-trading-red" />
+          </button>
+        )}
       </div>
     </div>
   );
