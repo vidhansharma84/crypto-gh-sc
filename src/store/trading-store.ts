@@ -3,10 +3,6 @@ import type { Instrument, AssetCategory } from "@/types/instrument";
 import type { OrderFormState, Position, PendingOrder, TradeHistoryEntry } from "@/types/order";
 import type { Timeframe, ChartType } from "@/types/chart";
 import type { AccountInfo } from "@/types/account";
-import { mockPositions } from "@/data/mock-positions";
-import { mockPendingOrders } from "@/data/mock-orders";
-import { mockTradeHistory } from "@/data/mock-history";
-import { mockAccount } from "@/data/account";
 
 interface AuthUser {
   id: string;
@@ -45,12 +41,15 @@ interface TradingStore {
   updateOrderForm: (updates: Partial<OrderFormState>) => void;
   resetOrderForm: () => void;
 
-  // Positions & orders
+  // Trading
   positions: Position[];
   pendingOrders: PendingOrder[];
   tradeHistory: TradeHistoryEntry[];
+  placeOrder: () => string | null; // returns error message or null
+  closePosition: (positionId: string) => void;
+  updatePositionPrices: () => void;
 
-  // Account
+  // Account (computed from wallet + positions)
   account: AccountInfo;
 
   // Bottom panel
@@ -76,21 +75,70 @@ const defaultOrderForm: OrderFormState = {
   takeProfitEnabled: false,
 };
 
-export const useTradingStore = create<TradingStore>((set) => ({
+function calcPL(pos: Position): number {
+  const diff = pos.side === "buy"
+    ? pos.currentPrice - pos.openPrice
+    : pos.openPrice - pos.currentPrice;
+  // P/L = price diff * quantity(lots) * lotSize / leverage is too complex
+  // Simplified: P/L = diff * quantity * 1000 (mini lots)
+  return parseFloat((diff * pos.quantity * 1000).toFixed(2));
+}
+
+function computeAccount(positions: Position[], walletBalance: number): AccountInfo {
+  const unrealizedPL = positions.reduce((sum, p) => sum + p.profitLoss, 0);
+  const totalMargin = positions.reduce((sum, p) => sum + p.margin, 0);
+  const balance = walletBalance;
+  const equity = balance + unrealizedPL;
+  const freeMargin = equity - totalMargin;
+  const marginLevel = totalMargin > 0 ? (equity / totalMargin) * 100 : 0;
+
+  return {
+    accountId: "FNX-LIVE",
+    name: "FNX Trading",
+    balance,
+    equity: parseFloat(equity.toFixed(2)),
+    margin: parseFloat(totalMargin.toFixed(2)),
+    freeMargin: parseFloat(freeMargin.toFixed(2)),
+    marginLevel: parseFloat(marginLevel.toFixed(2)),
+    unrealizedPL: parseFloat(unrealizedPL.toFixed(2)),
+    currency: "USD",
+  };
+}
+
+export const useTradingStore = create<TradingStore>((set, get) => ({
   // Auth
   isAuthenticated: false,
   user: null,
-  setUser: (user) => set({ user, isAuthenticated: !!user }),
+  setUser: (user) => {
+    const positions = get().positions;
+    set({
+      user,
+      isAuthenticated: !!user,
+      account: computeAccount(positions, user?.balance ?? 0),
+    });
+  },
   logout: async () => {
     await fetch("/api/auth/logout", { method: "POST" });
-    set({ user: null, isAuthenticated: false });
+    set({
+      user: null,
+      isAuthenticated: false,
+      positions: [],
+      pendingOrders: [],
+      tradeHistory: [],
+      account: computeAccount([], 0),
+    });
   },
   fetchUser: async () => {
     try {
       const res = await fetch("/api/auth/me");
       if (res.ok) {
         const data = await res.json();
-        set({ user: data.user, isAuthenticated: true });
+        const positions = get().positions;
+        set({
+          user: data.user,
+          isAuthenticated: true,
+          account: computeAccount(positions, data.user.balance),
+        });
       } else {
         set({ user: null, isAuthenticated: false });
       }
@@ -128,13 +176,146 @@ export const useTradingStore = create<TradingStore>((set) => ({
     })),
   resetOrderForm: () => set({ orderForm: defaultOrderForm }),
 
-  // Data
-  positions: mockPositions,
-  pendingOrders: mockPendingOrders,
-  tradeHistory: mockTradeHistory,
+  // Trading
+  positions: [],
+  pendingOrders: [],
+  tradeHistory: [],
+
+  placeOrder: () => {
+    const state = get();
+    const { selectedInstrument, orderForm, user, positions } = state;
+
+    if (!selectedInstrument) return "No instrument selected";
+    if (!user) return "Please login to trade";
+
+    const price = orderForm.side === "buy" ? selectedInstrument.ask : selectedInstrument.bid;
+    const margin = parseFloat(
+      ((price * orderForm.amount * selectedInstrument.lotSize) / orderForm.leverage).toFixed(2)
+    );
+
+    // Check wallet balance
+    const currentAccount = computeAccount(positions, user.balance);
+    if (margin > currentAccount.freeMargin) {
+      return "Insufficient balance. Add funds from admin.";
+    }
+
+    const position: Position = {
+      id: `pos-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      instrumentId: selectedInstrument.id,
+      symbol: selectedInstrument.symbol,
+      side: orderForm.side,
+      type: orderForm.type,
+      openPrice: price,
+      currentPrice: price,
+      quantity: orderForm.amount,
+      leverage: orderForm.leverage,
+      stopLoss: orderForm.stopLossEnabled ? orderForm.stopLoss : null,
+      takeProfit: orderForm.takeProfitEnabled ? orderForm.takeProfit : null,
+      profitLoss: 0,
+      profitLossPercent: 0,
+      margin,
+      swap: 0,
+      commission: 7,
+      openTime: new Date().toISOString(),
+      status: "open",
+    };
+
+    const newPositions = [...positions, position];
+    // Deduct margin from wallet on server
+    fetch("/api/wallet/update", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ amount: -margin }),
+    }).then((res) => {
+      if (res.ok) {
+        res.json().then((data) => {
+          set((s) => ({
+            user: s.user ? { ...s.user, balance: data.balance } : null,
+            account: computeAccount(s.positions, data.balance),
+          }));
+        });
+      }
+    });
+
+    set({
+      positions: newPositions,
+      account: computeAccount(newPositions, user.balance - margin),
+    });
+
+    return null; // success
+  },
+
+  closePosition: (positionId: string) => {
+    const state = get();
+    const pos = state.positions.find((p) => p.id === positionId);
+    if (!pos || !state.user) return;
+
+    const pnl = pos.profitLoss;
+    const returnAmount = pos.margin + pnl; // return margin + profit/loss
+
+    // Create history entry
+    const historyEntry: TradeHistoryEntry = {
+      ...pos,
+      closePrice: pos.currentPrice,
+      closeTime: new Date().toISOString(),
+      duration: formatDuration(new Date(pos.openTime), new Date()),
+      status: "closed",
+    };
+
+    const newPositions = state.positions.filter((p) => p.id !== positionId);
+
+    // Update wallet on server
+    fetch("/api/wallet/update", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ amount: returnAmount }),
+    }).then((res) => {
+      if (res.ok) {
+        res.json().then((data) => {
+          set((s) => ({
+            user: s.user ? { ...s.user, balance: data.balance } : null,
+            account: computeAccount(s.positions, data.balance),
+          }));
+        });
+      }
+    });
+
+    set({
+      positions: newPositions,
+      tradeHistory: [historyEntry, ...state.tradeHistory],
+      account: computeAccount(newPositions, state.user.balance + returnAmount),
+    });
+  },
+
+  updatePositionPrices: () => {
+    const state = get();
+    if (state.positions.length === 0) return;
+
+    const instrument = state.selectedInstrument;
+    if (!instrument) return;
+
+    const updated = state.positions.map((pos) => {
+      if (pos.instrumentId === instrument.id) {
+        const newPrice = pos.side === "buy" ? instrument.bid : instrument.ask;
+        const updatedPos = { ...pos, currentPrice: newPrice };
+        updatedPos.profitLoss = calcPL(updatedPos);
+        updatedPos.profitLossPercent = updatedPos.margin > 0
+          ? parseFloat(((updatedPos.profitLoss / updatedPos.margin) * 100).toFixed(2))
+          : 0;
+        return updatedPos;
+      }
+      return pos;
+    });
+
+    const walletBalance = state.user?.balance ?? 0;
+    set({
+      positions: updated,
+      account: computeAccount(updated, walletBalance),
+    });
+  },
 
   // Account
-  account: mockAccount,
+  account: computeAccount([], 0),
 
   // Bottom panel
   activeBottomTab: "positions",
@@ -146,3 +327,13 @@ export const useTradingStore = create<TradingStore>((set) => ({
   orderPanelOpen: false,
   toggleOrderPanel: () => set((state) => ({ orderPanelOpen: !state.orderPanelOpen })),
 }));
+
+function formatDuration(start: Date, end: Date): string {
+  const ms = end.getTime() - start.getTime();
+  const mins = Math.floor(ms / 60000);
+  if (mins < 60) return `${mins}m`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ${mins % 60}m`;
+  const days = Math.floor(hrs / 24);
+  return `${days}d ${hrs % 24}h`;
+}

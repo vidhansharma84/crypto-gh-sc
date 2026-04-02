@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useTradingStore } from "@/store/trading-store";
 import { cn } from "@/lib/utils";
 import { LEVERAGE_OPTIONS } from "@/lib/constants";
@@ -14,7 +15,8 @@ const ORDER_TYPES: { label: string; value: OrderType }[] = [
 ];
 
 export function OrderForm() {
-  const { selectedInstrument, orderForm, updateOrderForm } = useTradingStore();
+  const { selectedInstrument, orderForm, updateOrderForm, placeOrder, isAuthenticated } = useTradingStore();
+  const [feedback, setFeedback] = useState<{ type: "success" | "error"; msg: string } | null>(null);
 
   if (!selectedInstrument) return null;
 
@@ -290,8 +292,36 @@ export function OrderForm() {
         </div>
       </div>
 
+      {/* Feedback */}
+      {feedback && (
+        <div
+          className={cn(
+            "text-xs text-center py-1.5 rounded",
+            feedback.type === "success"
+              ? "bg-trading-green/15 text-trading-green"
+              : "bg-trading-red/15 text-trading-red"
+          )}
+        >
+          {feedback.msg}
+        </div>
+      )}
+
       {/* Execute Button */}
       <button
+        onClick={() => {
+          if (!isAuthenticated) {
+            setFeedback({ type: "error", msg: "Please login to trade" });
+            setTimeout(() => setFeedback(null), 3000);
+            return;
+          }
+          const err = placeOrder();
+          if (err) {
+            setFeedback({ type: "error", msg: err });
+          } else {
+            setFeedback({ type: "success", msg: `Order placed: ${orderForm.side.toUpperCase()} ${selectedInstrument.symbol}` });
+          }
+          setTimeout(() => setFeedback(null), 3000);
+        }}
         className={cn(
           "w-full py-3 rounded-lg font-bold text-sm text-white transition-all active:scale-[0.98]",
           orderForm.side === "buy"

@@ -20,7 +20,7 @@ const COLUMNS = [
 ];
 
 export function OpenPositions() {
-  const { positions } = useTradingStore();
+  const { positions, closePosition } = useTradingStore();
 
   if (positions.length === 0) {
     return (
@@ -93,7 +93,10 @@ export function OpenPositions() {
               {formatDateTime(pos.openTime)}
             </td>
             <td className="px-2 py-1.5">
-              <button className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-trading-red/20 transition-all">
+              <button
+                onClick={() => closePosition(pos.id)}
+                className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-trading-red/20 transition-all"
+              >
                 <X className="w-3 h-3 text-trading-red" />
               </button>
             </td>

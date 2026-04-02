@@ -29,6 +29,9 @@ export function usePriceSimulation() {
           (((direction * volatility) / instrument.bid) * 100).toFixed(2)
         ),
       });
+
+      // Update open position prices with new market data
+      useTradingStore.getState().updatePositionPrices();
     }, 1500);
 
     return () => {
