@@ -18,11 +18,13 @@ export async function POST(request: Request) {
     await setSession(user.id);
 
     return NextResponse.json({
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      balance: user.balance,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        balance: user.balance,
+      },
     });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Registration failed";

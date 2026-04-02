@@ -12,7 +12,10 @@ export interface DbUser {
   createdAt: string;
 }
 
-const DB_PATH = path.join(process.cwd(), "data", "users.json");
+const DB_PATH =
+  process.env.NODE_ENV === "production"
+    ? "/tmp/fnx-data/users.json"
+    : path.join(process.cwd(), "data", "users.json");
 
 function hashPassword(password: string): string {
   return crypto.createHash("sha256").update(password).digest("hex");
