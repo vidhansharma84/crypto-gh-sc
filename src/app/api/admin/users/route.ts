@@ -9,7 +9,8 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 
-  const users = getUsers().map((u) => ({
+  const allUsers = await getUsers();
+  const users = allUsers.map((u) => ({
     id: u.id,
     name: u.name,
     email: u.email,

@@ -48,6 +48,7 @@ interface TradingStore {
   placeOrder: () => string | null; // returns error message or null
   closePosition: (positionId: string) => void;
   updatePositionPrices: () => void;
+  loadUserData: () => Promise<void>;
 
   // Account (computed from wallet + positions)
   account: AccountInfo;
@@ -79,8 +80,6 @@ function calcPL(pos: Position): number {
   const diff = pos.side === "buy"
     ? pos.currentPrice - pos.openPrice
     : pos.openPrice - pos.currentPrice;
-  // P/L = price diff * quantity(lots) * lotSize / leverage is too complex
-  // Simplified: P/L = diff * quantity * 1000 (mini lots)
   return parseFloat((diff * pos.quantity * 1000).toFixed(2));
 }
 
@@ -116,6 +115,9 @@ export const useTradingStore = create<TradingStore>((set, get) => ({
       isAuthenticated: !!user,
       account: computeAccount(positions, user?.balance ?? 0),
     });
+    if (user) {
+      get().loadUserData();
+    }
   },
   logout: async () => {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -133,17 +135,42 @@ export const useTradingStore = create<TradingStore>((set, get) => ({
       const res = await fetch("/api/auth/me");
       if (res.ok) {
         const data = await res.json();
-        const positions = get().positions;
         set({
           user: data.user,
           isAuthenticated: true,
-          account: computeAccount(positions, data.user.balance),
         });
+        // Load positions/history/orders from DB
+        await get().loadUserData();
       } else {
         set({ user: null, isAuthenticated: false });
       }
     } catch {
       set({ user: null, isAuthenticated: false });
+    }
+  },
+
+  // Load all user trading data from MySQL
+  loadUserData: async () => {
+    try {
+      const [posRes, histRes, ordRes] = await Promise.all([
+        fetch("/api/positions"),
+        fetch("/api/trade-history"),
+        fetch("/api/pending-orders"),
+      ]);
+
+      const positions = posRes.ok ? (await posRes.json()).positions : [];
+      const tradeHistory = histRes.ok ? (await histRes.json()).history : [];
+      const pendingOrders = ordRes.ok ? (await ordRes.json()).orders : [];
+
+      const walletBalance = get().user?.balance ?? 0;
+      set({
+        positions,
+        tradeHistory,
+        pendingOrders,
+        account: computeAccount(positions, walletBalance),
+      });
+    } catch {
+      // Keep existing state on error
     }
   },
 
@@ -221,7 +248,14 @@ export const useTradingStore = create<TradingStore>((set, get) => ({
     };
 
     const newPositions = [...positions, position];
-    // Deduct margin from wallet on server
+
+    // Save position to MySQL and deduct margin
+    fetch("/api/positions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(position),
+    });
+
     fetch("/api/wallet/update", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -251,20 +285,36 @@ export const useTradingStore = create<TradingStore>((set, get) => ({
     if (!pos || !state.user) return;
 
     const pnl = pos.profitLoss;
-    const returnAmount = pos.margin + pnl; // return margin + profit/loss
+    const returnAmount = pos.margin + pnl;
+
+    const closeTime = new Date().toISOString();
+    const duration = formatDuration(new Date(pos.openTime), new Date());
 
     // Create history entry
     const historyEntry: TradeHistoryEntry = {
       ...pos,
       closePrice: pos.currentPrice,
-      closeTime: new Date().toISOString(),
-      duration: formatDuration(new Date(pos.openTime), new Date()),
+      closeTime,
+      duration,
       status: "closed",
     };
 
     const newPositions = state.positions.filter((p) => p.id !== positionId);
 
-    // Update wallet on server
+    // Persist to MySQL: move position to trade_history and update wallet
+    fetch("/api/positions", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        positionId,
+        closePrice: pos.currentPrice,
+        closeTime,
+        duration,
+        profitLoss: pos.profitLoss,
+        profitLossPercent: pos.profitLossPercent,
+      }),
+    });
+
     fetch("/api/wallet/update", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

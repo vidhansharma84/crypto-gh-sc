@@ -1,6 +1,6 @@
-import fs from "fs";
-import path from "path";
 import crypto from "crypto";
+import pool from "./mysql";
+import type { RowDataPacket, ResultSetHeader } from "mysql2";
 
 export interface DbUser {
   id: string;
@@ -12,10 +12,27 @@ export interface DbUser {
   createdAt: string;
 }
 
-const DB_PATH =
-  process.env.NODE_ENV === "production"
-    ? "/tmp/fnx-data/users.json"
-    : path.join(process.cwd(), "data", "users.json");
+interface UserRow extends RowDataPacket {
+  id: string;
+  name: string;
+  email: string;
+  password: string;
+  role: "user" | "admin";
+  balance: number;
+  created_at: Date;
+}
+
+function rowToUser(row: UserRow): DbUser {
+  return {
+    id: row.id,
+    name: row.name,
+    email: row.email,
+    password: row.password,
+    role: row.role,
+    balance: Number(row.balance),
+    createdAt: row.created_at.toISOString(),
+  };
+}
 
 function hashPassword(password: string): string {
   return crypto.createHash("sha256").update(password).digest("hex");
@@ -25,72 +42,54 @@ export function verifyPassword(password: string, hash: string): boolean {
   return hashPassword(password) === hash;
 }
 
-function ensureDb(): void {
-  const dir = path.dirname(DB_PATH);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
-  if (!fs.existsSync(DB_PATH)) {
-    // Seed with admin user
-    const admin: DbUser = {
-      id: crypto.randomUUID(),
-      name: "Admin",
-      email: "admin@fnxtrading.com",
-      password: hashPassword("admin123"),
-      role: "admin",
-      balance: 0,
-      createdAt: new Date().toISOString(),
-    };
-    fs.writeFileSync(DB_PATH, JSON.stringify([admin], null, 2));
-  }
+export async function getUsers(): Promise<DbUser[]> {
+  const [rows] = await pool.query<UserRow[]>("SELECT * FROM users");
+  return rows.map(rowToUser);
 }
 
-export function getUsers(): DbUser[] {
-  ensureDb();
-  const data = fs.readFileSync(DB_PATH, "utf-8");
-  return JSON.parse(data);
+export async function getUserByEmail(email: string): Promise<DbUser | undefined> {
+  const [rows] = await pool.query<UserRow[]>(
+    "SELECT * FROM users WHERE email = ? LIMIT 1",
+    [email.toLowerCase()]
+  );
+  return rows[0] ? rowToUser(rows[0]) : undefined;
 }
 
-function saveUsers(users: DbUser[]): void {
-  ensureDb();
-  fs.writeFileSync(DB_PATH, JSON.stringify(users, null, 2));
+export async function getUserById(id: string): Promise<DbUser | undefined> {
+  const [rows] = await pool.query<UserRow[]>(
+    "SELECT * FROM users WHERE id = ? LIMIT 1",
+    [id]
+  );
+  return rows[0] ? rowToUser(rows[0]) : undefined;
 }
 
-export function getUserByEmail(email: string): DbUser | undefined {
-  return getUsers().find((u) => u.email.toLowerCase() === email.toLowerCase());
-}
-
-export function getUserById(id: string): DbUser | undefined {
-  return getUsers().find((u) => u.id === id);
-}
-
-export function createUser(name: string, email: string, password: string): DbUser {
-  const users = getUsers();
-
-  if (users.some((u) => u.email.toLowerCase() === email.toLowerCase())) {
+export async function createUser(name: string, email: string, password: string): Promise<DbUser> {
+  const existing = await getUserByEmail(email);
+  if (existing) {
     throw new Error("Email already registered");
   }
 
-  const user: DbUser = {
-    id: crypto.randomUUID(),
-    name,
-    email: email.toLowerCase(),
-    password: hashPassword(password),
-    role: "user",
-    balance: 0,
-    createdAt: new Date().toISOString(),
-  };
+  const id = crypto.randomUUID();
+  const hashedPassword = hashPassword(password);
 
-  users.push(user);
-  saveUsers(users);
+  await pool.query<ResultSetHeader>(
+    "INSERT INTO users (id, name, email, password, role, balance) VALUES (?, ?, ?, ?, 'user', 0)",
+    [id, name, email.toLowerCase(), hashedPassword]
+  );
+
+  const user = await getUserById(id);
+  if (!user) throw new Error("Failed to create user");
   return user;
 }
 
-export function addFundsToUser(userId: string, amount: number): DbUser {
-  const users = getUsers();
-  const user = users.find((u) => u.id === userId);
+export async function addFundsToUser(userId: string, amount: number): Promise<DbUser> {
+  const [result] = await pool.query<ResultSetHeader>(
+    "UPDATE users SET balance = balance + ? WHERE id = ?",
+    [amount, userId]
+  );
+  if (result.affectedRows === 0) throw new Error("User not found");
+
+  const user = await getUserById(userId);
   if (!user) throw new Error("User not found");
-  user.balance += amount;
-  saveUsers(users);
   return user;
 }

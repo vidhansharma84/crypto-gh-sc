@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const user = addFundsToUser(userId, amount);
+    const user = await addFundsToUser(userId, amount);
     return NextResponse.json({
       user: {
         id: user.id,

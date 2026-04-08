@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const updated = addFundsToUser(user.id, amount);
+    const updated = await addFundsToUser(user.id, amount);
     return NextResponse.json({ balance: updated.balance });
   } catch {
     return NextResponse.json({ error: "Failed to update wallet" }, { status: 500 });

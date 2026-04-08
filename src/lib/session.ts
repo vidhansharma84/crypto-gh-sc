@@ -18,7 +18,7 @@ export async function getSession(): Promise<DbUser | null> {
   const cookieStore = await cookies();
   const sessionCookie = cookieStore.get(SESSION_COOKIE);
   if (!sessionCookie?.value) return null;
-  const user = getUserById(sessionCookie.value);
+  const user = await getUserById(sessionCookie.value);
   return user ?? null;
 }
 
