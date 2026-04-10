@@ -42,12 +42,41 @@ export function verifyPassword(password: string, hash: string): boolean {
   return hashPassword(password) === hash;
 }
 
+const ADMIN_EMAIL = "admin@fnxtrading.com";
+const ADMIN_PASSWORD = "admin123";
+
+let adminEnsured = false;
+
+// Auto-create admin user if it doesn't exist (self-healing).
+// Runs once per container lifetime; safe on fresh DBs or if admin row is missing.
+export async function ensureAdmin(): Promise<void> {
+  if (adminEnsured) return;
+  try {
+    const [rows] = await pool.query<UserRow[]>(
+      "SELECT id FROM users WHERE email = ? LIMIT 1",
+      [ADMIN_EMAIL]
+    );
+    if (rows.length === 0) {
+      await pool.query<ResultSetHeader>(
+        "INSERT INTO users (id, name, email, password, role, balance) VALUES (?, 'Admin', ?, ?, 'admin', 0)",
+        [crypto.randomUUID(), ADMIN_EMAIL, hashPassword(ADMIN_PASSWORD)]
+      );
+      console.log("✅ Admin user auto-created");
+    }
+    adminEnsured = true;
+  } catch (err) {
+    console.error("ensureAdmin failed:", err);
+  }
+}
+
 export async function getUsers(): Promise<DbUser[]> {
+  await ensureAdmin();
   const [rows] = await pool.query<UserRow[]>("SELECT * FROM users");
   return rows.map(rowToUser);
 }
 
 export async function getUserByEmail(email: string): Promise<DbUser | undefined> {
+  await ensureAdmin();
   const [rows] = await pool.query<UserRow[]>(
     "SELECT * FROM users WHERE email = ? LIMIT 1",
     [email.toLowerCase()]
